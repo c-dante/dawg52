@@ -1,7 +1,7 @@
 {
-  "name": "web",
+  "name": "dawg52",
   "version": "0.0.0",
-  "description": "Fresh start at a web base",
+  "description": "a puppr in the lost",
   "main": "none",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -10,19 +10,23 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/c-dante/web.git"
+    "url": "git+https://github.com/c-dante/dawg52.git"
   },
   "author": "Dante <c.dante.federici@gmail.com> (http://dante.codes/)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/c-dante/web/issues"
+    "url": "https://github.com/c-dante/dawg52/issues"
   },
-  "homepage": "https://github.com/c-dante/web#readme",
+  "homepage": "https://c-dante.github.io/dawg52",
   "sideEffects": [
     "**/*.css"
   ],
   "dependencies": {
-    "lodash": "^4.17.11"
+    "inferno": "^7.0.0",
+    "inferno-hyperscript": "^7.0.0",
+    "lodash": "^4.17.11",
+    "redux": "^4.0.1",
+    "reselect": "^4.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.1.2",

@@ -1,6 +1,2 @@
-# web
-Fresh start at a web base
-
-# features
-* webpack v4 script to build assets.
-
+# dawg 52
+a web-based impl of [Just the stats, Ma’am](https://hackmd.io/s/ryiNjY5Ym).
