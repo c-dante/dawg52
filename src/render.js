@@ -1,9 +1,17 @@
 import { h } from 'inferno-hyperscript';
 import fp from 'lodash/fp';
 
-import { GameState } from './dawg';
+const logFn = (fn, name = '') => (...args) => {
+	const out = fn(...args);
+	console.log(name, args, out);
+	return out;
+}
+
+import { GameState, actions } from './dawg';
+import { createSelector } from 'reselect';
 
 // -------- global actions...? new game...? main menu...? ------- //
+export const actionsStateSelector = fp.get(['boundActions']);
 export const Actions = ({ newGame }) => {
 	return h('div', { class: 'actions' }, [
 		h('button', { onClick: newGame }, ['New game']),
@@ -18,7 +26,12 @@ export const CardRender = ({ card, playCard }) => h('div', {
 	`${card.number} of ${card.type}`,
 ]);
 
-export const HandCtrl = ({ gameState, hand, playCard }) => h('div', { class: 'hand-stats' }, [
+export const handStateSelector = createSelector([
+	fp.get(['gameState']),
+	fp.get(['hand']),
+	fp.get(['boundActions', 'playCard']),
+], (gameState, hand, playCard) => ({ gameState, hand, playCard }));
+export const Hand = ({ gameState, hand, playCard }) => h('div', { class: 'hand-stats' }, [
 	h('h4', {}, 'Hand'),
 	h('div', {
 		class: `cards ${fp.kebabCase(gameState)}`
@@ -29,8 +42,10 @@ export const HandCtrl = ({ gameState, hand, playCard }) => h('div', { class: 'ha
 ]);
 
 // -------- deck ------- //
-
-export const DeckStats = ({ deck }) => h('div', { class: 'deck-stats' }, [
+const decktateSelector = createSelector([
+	fp.get(['deck']),
+], (deck) => ({ deck }));
+export const Deck = ({ deck }) => h('div', { class: 'deck-stats' }, [
 	h('label', {}, 'Remaining Cards: '),
 	h('span', {}, deck.length),
 ]);
@@ -60,19 +75,25 @@ export const feedbackStateSelector = state => {
 	}
 };
 
-export const GameFeedback = ({ instruction }) => h('div', { class: 'feedback'}, [
+export const Feedback = ({ instruction }) => h('div', { class: 'feedback'}, [
 	instruction ? h('div', { class: 'instruction' }, instruction) : undefined,
 ]);
 
 
 // -------- dawg ------- //
-export const DawgRedux = ({ hand, deck, gameState, feedbackState, boundActions }) => {
-	const { newGame, playCard } = boundActions;
+const dawgStateSelector = createSelector([
+	actionsStateSelector,
+	handStateSelector,
+	decktateSelector,
+	feedbackStateSelector,
+], (actionsState, handState, deckState, feedbackState) => ({ actionsState, handState, deckState, feedbackState }));
+export const DawgRedux = (state) => {
+	const dawgState = logFn(dawgStateSelector)(state);
 	return h('div', { class: 'dawg' }, [
 			h('h1', {}, 'dawg'),
-			h(GameFeedback, feedbackState),
-			h(HandCtrl, { hand, gameState, playCard, gameState }),
-			h(DeckStats, { deck }),
-			h(Actions, { newGame }),
+			h(Feedback, dawgState.feedbackState),
+			h(Hand, dawgState.handState),
+			h(Deck, dawgState.deckState),
+			h(Actions, dawgState.actionsState),
 		]);
 };
