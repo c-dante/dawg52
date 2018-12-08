@@ -21,6 +21,7 @@ export const genDeck = () => Object.keys(CardType).flatMap(type => new Array(13)
  */
 export const GameState = {
 	// -- New Game --> PlayForTurn
+	// Resolve -- press next --> PlayForTurn
 	PlayForTurn: 'PlayForTurn',
 
 	// PlayForTurn -- chose a location --> PlayingLocation
@@ -30,7 +31,7 @@ export const GameState = {
 	PlayingEvent: 'PlayingEvent', // -> Resolve
 
 	// PlayingLocation -- chose something to find --> REsolve
-	Resolve: 'Resolve', // -> PlayForTurn
+	Resolve: 'Resolve', // --> PlayForTurn
 
 	// PlayForTurn --no valid plays --> EndGame
 	EndGame: 'EndGame',
@@ -95,15 +96,16 @@ const playForTurn = (state, action) => {
 
 // Play a new location
 const playLocation = (state, action) => {
+	const visiting = state.playingCard;
 	const tryFind = action.payload;
 	if (!tryFind) {
 		return {
 			...state,
-			hand: hand.filter(x => x !== card),
-			discard: state.discard.concat(card),
+			hand: state.hand.filter(x => x !== visiting),
+			discard: state.discard.concat(visiting),
 			gameState: GameState.Resolve,
 			resolution: {
-				message: `Welcome to ${location.type}`,
+				message: `Welcome to ${visiting.name}`,
 				success: true,
 			},
 		};
@@ -128,10 +130,12 @@ const stateToPlayHandler = {
 export const GameAction = {
 	NEW_GAME: 'GameAction:NEW_GAME',
 	PLAY_CARD: 'GameAction:PLAY_CARD',
+	CONTINUE: 'GameAction:CONTINUE',
 };
 export const actions = {
 	newGame: () => act(GameAction.NEW_GAME),
 	playCard: (card) => act(GameAction.PLAY_CARD, card),
+	continue: () => act(GameAction.CONTINUE),
 };
 export const reducer = (state = defaultState, action) => {
 	switch (action.type) {
@@ -167,6 +171,15 @@ export const reducer = (state = defaultState, action) => {
 			}
 			return handler(state, action);
 		}
+
+		// We read some feedback, so advance from resolve state
+		case GameAction.CONTINUE:
+			// @todo: attempt to draw back up to 5
+			return {
+				...state,
+				gameState: GameState.PlayForTurn,
+				resolution: undefined,
+			}
 
 		default:
 			console.debug('Unhandled by dawg', state, action);

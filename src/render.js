@@ -19,6 +19,58 @@ export const Actions = ({ newGame }) => {
 	]);
 };
 
+
+
+
+
+
+
+// -------- Resolve ------- //
+const resolveStateSelector = createSelector([
+	fp.get('resolution'),
+	fp.get('boundActions'),
+], (resolution, boundActions) => {
+	if (!resolution) {
+		return undefined;
+	}
+
+	return { resolution, onNext: boundActions.continue };
+});
+const Resolve = ({ resolution, onNext }) => h('div', { class: classNames('resolve', {
+	'resolve--success': resolution.success,
+	'resolve--failure': !resolution.success,
+}) }, [
+	h('div', {}, resolution.message),
+	h('button', { onClick: onNext }, 'Next'),
+]);
+
+
+
+
+
+
+
+
+
+// -------- Discard ------- //
+const discardStateSelector = createSelector(
+	[fp.get('discard')], (cards) => ({ cards })
+);
+const Discard = ({ cards }) => h('div', { class: 'dicard' }, [
+	h('h4', {}, 'Dicard'),
+	cards.length <= 0
+		? h('div', {}, 'Empty.')
+		: h('div', { }, [
+				h('div', {}, cards.length),
+				// h('button', {}, 'View'),
+			]),
+]);
+
+
+
+
+
+
 // -------- hand + cards ------- //
 export const CardRender = ({ card, playCard, validPlays }) => h('div', {
 	class: classNames('btn', 'card', {
@@ -48,48 +100,80 @@ export const Hand = ({ hand, playCard, validPlays }) => h('div', { class: 'hand-
 	]),
 ]);
 
+
+
+
+
 // -------- deck ------- //
-const decktateSelector = createSelector([
-	fp.get(['deck']),
-], (deck) => ({ deck }));
+const decktateSelector = createSelector(
+	[fp.get(['deck'])], (deck) => ({ deck })
+);
 export const Deck = ({ deck }) => h('div', { class: 'deck-stats' }, [
 	h('label', {}, 'Remaining Cards: '),
 	h('span', {}, deck.length),
 ]);
 
+
+
+
+
+
+
 // -------- player cta ------- //
-export const feedbackStateSelector = state => {
-	switch (state.gameState) {
-		case GameState.PlayForTurn:
-			return {
-				instruction: 'Do something. (Select a Location or Event)',
-			};
+export const instructionSelector = createSelector([
+	fp.get(['gameState']),
+	fp.get(['playingCard', 'name']),
+], (gameState, playingCardName) =>{
+		switch (gameState) {
+			case GameState.PlayForTurn:
+				return 'Do something. (Select a Location or Event)'
 
-		case GameState.PlayingLocation:
-			return {
-				instruction: `On your way to ${state.playingCard.name}, you stumble across... (Select an Artifact, Event, or Person)`,
-			};
+			case GameState.PlayingLocation:
+				return `On your way to ${playingCardName}, you stumble across... (Select an Artifact, Event, or Person)`;
 
-		case GameState.PlayingEvent:
-			return {
-				instruction: `[@todo: feedback for resolve event: ${state.playingCard.name}]`,
-			};
+			case GameState.PlayingEvent:
+				return `[@todo: feedback for resolve event: ${playingCardName}]`;
 
-		case GameState.Resolve:
-			return {
-				instruction: '[Press next to continue]',
-			};
+			case GameState.Resolve:
+				return '';
 
-		default:
-			return {
-				instruction: `Start a game? [Unknown state: ${state.gameState}]`,
-			};
+			default:
+				return `Start a game? [Unknown state: ${gameState}]`;
+		}
 	}
-};
+);
 
-export const Feedback = ({ instruction }) => h('div', { class: 'feedback'}, [
+const skipStepSelector = createSelector([
+	fp.get('gameState'),
+	fp.get('boundActions'),
+], (gameState, boundActions) => {
+	if (gameState === GameState.PlayingLocation) {
+		return {
+			hasSkip: true,
+			onSkip: () => boundActions.playCard(undefined), // no play
+		};
+	}
+
+	return {
+		hasSkip: false,
+	};
+});
+const feedbackStateSelector = createSelector([
+	instructionSelector,
+	skipStepSelector,
+	resolveStateSelector,
+], (instruction, skipStep, resolveState) => ({ instruction, skipStep, resolveState }))
+export const Feedback = ({ instruction, skipStep, resolveState }) => h('div', { class: 'feedback'}, [
+	resolveState ? h(Resolve, resolveState) : undefined,
 	instruction ? h('div', { class: 'instruction' }, instruction) : undefined,
+	skipStep.hasSkip ? h('button', { onClick: skipStep.onSkip }, 'Skip') : undefined,
 ]);
+
+
+
+
+
+
 
 
 // -------- dawg ------- //
@@ -98,7 +182,10 @@ const dawgStateSelector = createSelector([
 	handStateSelector,
 	decktateSelector,
 	feedbackStateSelector,
-], (actionsState, handState, deckState, feedbackState) => ({ actionsState, handState, deckState, feedbackState }));
+	discardStateSelector,
+], (actionsState, handState, deckState, feedbackState, discardState) => ({
+	actionsState, handState, deckState, feedbackState, discardState,
+}));
 export const DawgRedux = (state) => {
 	const dawgState = logFn(dawgStateSelector)(state);
 	return h('div', { class: 'dawg' }, [
@@ -106,6 +193,7 @@ export const DawgRedux = (state) => {
 			h(Feedback, dawgState.feedbackState),
 			h(Hand, dawgState.handState),
 			h(Deck, dawgState.deckState),
+			h(Discard, dawgState.discardState),
 			h(Actions, dawgState.actionsState),
 		]);
 };

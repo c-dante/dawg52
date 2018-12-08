@@ -1,8 +1,6 @@
 import { render } from 'inferno';
 import { h } from 'inferno-hyperscript';
 import { createStore } from 'redux';
-import { createSelector } from 'reselect';
-import fp from 'lodash/fp';
 
 import './index.css';
 
@@ -11,35 +9,25 @@ import  { bindActBuilder } from './util';
 
 // Build our store
 import { reducer as gameReducer, actions } from './dawg';
-const store = createStore(gameReducer);
+const store = createStore(
+	gameReducer,
+	// dev tools browser extension @see: http://extension.remotedev.io/#usage
+	window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+);
 
 // Wrap to auto-dispatch out actions
 const boundActions = bindActBuilder(store)(actions);
 
 // Build our rendering
-import { DawgRedux, feedbackStateSelector } from './render';
-
-const gameStateSelector = fp.get(['gameState']);
-
-const appStateSelector = createSelector([
-	x => x, // adapter for now
-	feedbackStateSelector,// -------- dawg ------- //
-	gameStateSelector,
-], (state, feedbackState, gameState) => ({
-	...state,
-	feedbackState,
-	gameState,
-}));
+import { DawgRedux } from './render';
 
 const renderApp = () => {
 	// @todo: hacked in -- should use connect instead
 	const mergeTo = document.querySelector('body .dawg');
-	const appState = appStateSelector(store.getState());
 	const appStateWithActiions = {
-		...appState,
+		...store.getState(),
 		boundActions, // ? spread?
 	};
-	console.log('=>', appStateWithActiions);
 	render(h(DawgRedux, appStateWithActiions), document.body, mergeTo);
 };
 
