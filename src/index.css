@@ -5,6 +5,11 @@
 	user-select: none;
 }
 
+.dawg h1 .small {
+	font-size: 0.35em;
+	color: #bbb;
+}
+
 .hand-stats {
 	h4 {
 		margin-bottom: 0;
@@ -22,20 +27,18 @@
 		transition: border-color, box-shadow 0.5s;
 	}
 
-	.play-for-turn {
-		.valid-play, .card--location, .card--event {
-			border-color: #fd5;
-		}
+	.valid-play {
+		border-color: #fd5;
+	}
 
-		.valid-play:hover, .card--location:hover, .card--event:hover {
-			box-shadow: 0px 0px 5px #fd5;
-		}
+	.valid-play:hover {
+		box-shadow: 0px 0px 5px #fd5;
+	}
 
-		.valid-play:active, .card--location:active, .card--event:active {
-			box-shadow: 0px 0px 5px  #f88;
-			border-color: #f88;
-			transition: none;
-		}
+	.valid-play:active {
+		box-shadow: 0px 0px 5px  #f88;
+		border-color: #f88;
+		transition: none;
 	}
 }
 

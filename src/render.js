@@ -1,5 +1,7 @@
 import { h } from 'inferno-hyperscript';
 import fp from 'lodash/fp';
+import { createSelector } from 'reselect';
+import classNames from 'classnames';
 
 const logFn = (fn, name = '') => (...args) => {
 	const out = fn(...args);
@@ -7,8 +9,7 @@ const logFn = (fn, name = '') => (...args) => {
 	return out;
 }
 
-import { GameState, actions } from './dawg';
-import { createSelector } from 'reselect';
+import { GameState, validPlaysForState } from './dawg';
 
 // -------- global actions...? new game...? main menu...? ------- //
 export const actionsStateSelector = fp.get(['boundActions']);
@@ -19,24 +20,30 @@ export const Actions = ({ newGame }) => {
 };
 
 // -------- hand + cards ------- //
-export const CardRender = ({ card, playCard }) => h('div', {
-	class: `btn card card--${fp.kebabCase(card.type)}`,
+export const CardRender = ({ card, playCard, validPlays }) => h('div', {
+	class: classNames('btn', 'card', {
+		'valid-play': validPlays.has(card.type),
+	}),
 	onClick: () => playCard(card),
 }, [
-	`${card.number} of ${card.type}`,
+	card.name,
 ]);
 
+const validPlaysSelector = createSelector(
+	[fp.get(['gameState'])],
+	(gameState) => fp.getOr(new Set(), [gameState], validPlaysForState)
+);
 export const handStateSelector = createSelector([
-	fp.get(['gameState']),
 	fp.get(['hand']),
 	fp.get(['boundActions', 'playCard']),
-], (gameState, hand, playCard) => ({ gameState, hand, playCard }));
-export const Hand = ({ gameState, hand, playCard }) => h('div', { class: 'hand-stats' }, [
+	validPlaysSelector,
+], (hand, playCard, validPlays) => ({ hand, playCard, validPlays }));
+export const Hand = ({ hand, playCard, validPlays }) => h('div', { class: 'hand-stats' }, [
 	h('h4', {}, 'Hand'),
 	h('div', {
-		class: `cards ${fp.kebabCase(gameState)}`
+		class: 'cards'
 	}, [
-		...hand.map(card => h(CardRender, { card, playCard })),
+		...hand.map(card => h(CardRender, { card, playCard, validPlays })),
 		hand.length <= 0 ? h('div', {}, 'no cards in hand...') : undefined,
 	]),
 ]);
@@ -60,12 +67,17 @@ export const feedbackStateSelector = state => {
 
 		case GameState.PlayingLocation:
 			return {
-				instruction: 'What did you find? (Select an Artifact, Event, or Person)',
+				instruction: `On your way to ${state.playingCard.name}, you stumble across... (Select an Artifact, Event, or Person)`,
 			};
 
 		case GameState.PlayingEvent:
 			return {
-				instruction: `[@todo: feedback for resolve event: ${state.playingCard.number}]`,
+				instruction: `[@todo: feedback for resolve event: ${state.playingCard.name}]`,
+			};
+
+		case GameState.Resolve:
+			return {
+				instruction: '[Press next to continue]',
 			};
 
 		default:
@@ -90,7 +102,7 @@ const dawgStateSelector = createSelector([
 export const DawgRedux = (state) => {
 	const dawgState = logFn(dawgStateSelector)(state);
 	return h('div', { class: 'dawg' }, [
-			h('h1', {}, 'dawg'),
+			h('h1', {}, ['dawg', h('div', { class: 'small' }, state.gameState)]),
 			h(Feedback, dawgState.feedbackState),
 			h(Hand, dawgState.handState),
 			h(Deck, dawgState.deckState),
