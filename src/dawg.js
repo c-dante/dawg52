@@ -144,10 +144,9 @@ export const reducer = (state = defaultState, action) => {
 			const { deck, hand } = drawTo(shuffleArray(genDeck()), []);
 
 			return {
-				...state,
+				...defaultState,
 				hand,
 				deck,
-				discard: [],
 				gameState: GameState.PlayForTurn,
 			};
 		}
