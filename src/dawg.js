@@ -13,6 +13,8 @@ export const genDeck = () => Object.keys(CardType).flatMap(type => new Array(13)
 		type,
 		number: i + 1,
 		name: `${i + 1} of ${type}`,
+		faceDown: true,
+		upsideDown: false,
 	})
 ));
 
@@ -43,7 +45,9 @@ export const GameState = {
 const defaultState = {
 	hand: [],
 	deck: [],
+	played: [],
 	discard: [],
+	currentLocation: undefined,
 	gameState: GameState.PlayForTurn,
 	resolution: undefined,
 };
@@ -102,8 +106,9 @@ const playLocation = (state, action) => {
 		return {
 			...state,
 			hand: state.hand.filter(x => x !== visiting),
-			discard: state.discard.concat(visiting),
+			played: state.played.concat(visiting),
 			gameState: GameState.Resolve,
+			currentLocation: visiting,
 			resolution: {
 				message: `Welcome to ${visiting.name}`,
 				success: true,
@@ -173,9 +178,12 @@ export const reducer = (state = defaultState, action) => {
 
 		// We read some feedback, so advance from resolve state
 		case GameAction.CONTINUE:
-			// @todo: attempt to draw back up to 5
+			// Draw up to 5
+			const { deck, hand } = drawTo(state.deck, state.hand);
 			return {
 				...state,
+				deck,
+				hand,
 				gameState: GameState.PlayForTurn,
 				resolution: undefined,
 			}

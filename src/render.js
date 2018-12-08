@@ -14,12 +14,21 @@ import { GameState, validPlaysForState } from './dawg';
 // -------- global actions...? new game...? main menu...? ------- //
 export const actionsStateSelector = fp.get(['boundActions']);
 export const Actions = ({ newGame }) => {
-	return h('div', { class: 'actions' }, [
+	return h('section', { class: 'actions' }, [
 		h('button', { onClick: newGame }, ['New game']),
 	]);
 };
 
 
+// -------- A single card ------- //
+const CardRender = ({ card, playCard = fp.noop, validPlays = new Set() }) => h('div', {
+	class: classNames('btn', 'card', {
+		'valid-play': validPlays.has(card.type),
+	}),
+	onClick: () => playCard(card),
+}, [
+	card.name,
+]);
 
 
 
@@ -49,6 +58,30 @@ const Resolve = ({ resolution, onNext }) => h('div', { class: classNames('resolv
 
 
 
+// -------- InPlay ------- //
+const inPlayStateSelector = createSelector([
+	fp.get('played'),
+	fp.get('currentLocation'),
+], (cards, currentLocation) => ({
+	cards,
+	locationName: currentLocation ? `At: ${currentLocation.name}` : 'Lost in the wilderness',
+}));
+const InPlay = ({ cards, locationName }) => h('section', { class: 'in-play' }, [
+	h('h4', {}, locationName),
+	cards.length <= 0
+		? h('div', {}, 'You have nothing.')
+		: h('div', { class: 'cards' }, [
+			...cards.map(card => h(CardRender, { card })),
+		]),
+]);
+
+
+
+
+
+
+
+
 
 
 
@@ -56,7 +89,7 @@ const Resolve = ({ resolution, onNext }) => h('div', { class: classNames('resolv
 const discardStateSelector = createSelector(
 	[fp.get('discard')], (cards) => ({ cards })
 );
-const Discard = ({ cards }) => h('div', { class: 'dicard' }, [
+const Discard = ({ cards }) => h('section', { class: 'dicard' }, [
 	h('h4', {}, 'Dicard'),
 	cards.length <= 0
 		? h('div', {}, 'Empty.')
@@ -72,15 +105,6 @@ const Discard = ({ cards }) => h('div', { class: 'dicard' }, [
 
 
 // -------- hand + cards ------- //
-export const CardRender = ({ card, playCard, validPlays }) => h('div', {
-	class: classNames('btn', 'card', {
-		'valid-play': validPlays.has(card.type),
-	}),
-	onClick: () => playCard(card),
-}, [
-	card.name,
-]);
-
 const validPlaysSelector = createSelector(
 	[fp.get(['gameState'])],
 	(gameState) => fp.getOr(new Set(), [gameState], validPlaysForState)
@@ -90,7 +114,7 @@ export const handStateSelector = createSelector([
 	fp.get(['boundActions', 'playCard']),
 	validPlaysSelector,
 ], (hand, playCard, validPlays) => ({ hand, playCard, validPlays }));
-export const Hand = ({ hand, playCard, validPlays }) => h('div', { class: 'hand-stats' }, [
+export const Hand = ({ hand, playCard, validPlays }) => h('section', { class: 'hand-stats' }, [
 	h('h4', {}, 'Hand'),
 	h('div', {
 		class: 'cards'
@@ -108,7 +132,7 @@ export const Hand = ({ hand, playCard, validPlays }) => h('div', { class: 'hand-
 const decktateSelector = createSelector(
 	[fp.get(['deck'])], (deck) => ({ deck })
 );
-export const Deck = ({ deck }) => h('div', { class: 'deck-stats' }, [
+export const Deck = ({ deck }) => h('section', { class: 'deck-stats' }, [
 	h('label', {}, 'Remaining Cards: '),
 	h('span', {}, deck.length),
 ]);
@@ -163,7 +187,7 @@ const feedbackStateSelector = createSelector([
 	skipStepSelector,
 	resolveStateSelector,
 ], (instruction, skipStep, resolveState) => ({ instruction, skipStep, resolveState }))
-export const Feedback = ({ instruction, skipStep, resolveState }) => h('div', { class: 'feedback'}, [
+export const Feedback = ({ instruction, skipStep, resolveState }) => h('section', { class: 'feedback'}, [
 	resolveState ? h(Resolve, resolveState) : undefined,
 	instruction ? h('div', { class: 'instruction' }, instruction) : undefined,
 	skipStep.hasSkip ? h('button', { onClick: skipStep.onSkip }, 'Skip') : undefined,
@@ -183,13 +207,15 @@ const dawgStateSelector = createSelector([
 	decktateSelector,
 	feedbackStateSelector,
 	discardStateSelector,
-], (actionsState, handState, deckState, feedbackState, discardState) => ({
-	actionsState, handState, deckState, feedbackState, discardState,
+	inPlayStateSelector,
+], (actionsState, handState, deckState, feedbackState, discardState, inPlayState) => ({
+	actionsState, handState, deckState, feedbackState, discardState, inPlayState,
 }));
 export const DawgRedux = (state) => {
 	const dawgState = logFn(dawgStateSelector)(state);
 	return h('div', { class: 'dawg' }, [
 			h('h1', {}, ['dawg', h('div', { class: 'small' }, state.gameState)]),
+			h(InPlay, dawgState.inPlayState),
 			h(Feedback, dawgState.feedbackState),
 			h(Hand, dawgState.handState),
 			h(Deck, dawgState.deckState),

@@ -1,3 +1,13 @@
+.dawg {
+	h4 {
+		margin-bottom: 0;
+	}
+
+	section:not(:last-child) {
+		margin-bottom: 1em;
+	}
+}
+
 .btn {
 	border: 1px solid #ccc;
 	text-align: center;
@@ -10,20 +20,19 @@
 	color: #bbb;
 }
 
+.cards {
+	display: flex;
+	justify-items: start;
+	flex-wrap: wrap;
+}
+
+.card {
+	width: 4em;
+	margin: 5px;
+}
+
 .hand-stats {
-	h4 {
-		margin-bottom: 0;
-	}
-
-	.cards {
-		display: flex;
-		justify-items: start;
-		flex-wrap: wrap;
-	}
-
 	.card {
-		width: 4em;
-		margin: 5px;
 		transition: border-color, box-shadow 0.5s;
 	}
 
@@ -42,8 +51,5 @@
 	}
 }
 
-.dicard {
-	h4 {
-		margin-bottom: 0;
-	}
+.actions {
 }
