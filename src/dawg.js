@@ -102,13 +102,14 @@ const playForTurn = (state, action) => {
 const playLocation = (state, action) => {
 	const visiting = state.playingCard;
 	const tryFind = action.payload;
+
 	if (!tryFind) {
 		return {
 			...state,
 			hand: state.hand.filter(x => x !== visiting),
 			played: state.played.concat(visiting),
-			gameState: GameState.Resolve,
 			currentLocation: visiting,
+			gameState: GameState.Resolve,
 			resolution: {
 				message: `Welcome to ${visiting.name}`,
 				success: true,
@@ -116,7 +117,22 @@ const playLocation = (state, action) => {
 		};
 	}
 
-	throw new Error('@todo: handle location play.');
+	switch (tryFind.type) {
+		case CardType.Artifact:
+			return {
+				...state,
+				hand: state.hand.filter(x => x !== visiting && x !== tryFind),
+				played: state.played.concat(visiting, tryFind),
+				currentLocation: visiting,
+				gameState: GameState.Resolve,
+				resolution: {
+					message: `Welcome to ${visiting.name}. You found ${tryFind.name} on your way!`,
+					success: true,
+				},
+			}
+		default:
+			throw new Error(`@todo: handle finding ${tryFind.name} at location`);
+	}
 };
 
 // Map the state to the handler for playing a card
