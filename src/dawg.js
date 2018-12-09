@@ -35,9 +35,7 @@ export const GameState = {
 	// PlayForTurn -- chose a location --> PlayingLocation
 	PlayingLocation: 'PlayingLocation',
 
-	// PlayForTurn -- chose an event card --> PlayingEvent
-	PlayingEvent: 'PlayingEvent', // -> Resolve
-
+	// PlayForTurn -- chose an event card --> Resolve
 	// PlayingLocation -- chose something to find --> REsolve
 	Resolve: 'Resolve', // --> PlayForTurn
 
@@ -93,12 +91,22 @@ const playForTurn = (state, action) => {
 				gameState: GameState.PlayingLocation,
 			};
 
-		case CardType.Event:
+		case CardType.Event: {
+			const eventMessage = `Off in the distance, you see something strange. It's ${card.name}!`;
 			return {
 				...state,
-				playingCard: card,
-				gameState: GameState.PlayingEvent,
+				hand: state.hand.filter(x => x !== card),
+				played: state.played.concat(card),
+				gameState: GameState.Resolve,
+				resolution: {
+					message: eventMessage,
+					success: true,
+				},
+				gameLog: state.gameLog.concat(
+					gameMessage(eventMessage),
+				),
 			};
+		};
 
 		default:
 			throw new Error('Invalid card type');
@@ -110,7 +118,7 @@ const playLocation = (state, action) => {
 	const visiting = state.playingCard;
 	const tryFind = action.payload;
 
-	const message = `Welcome to ${visiting.name}`;
+	const locationMessage = `Welcome to ${visiting.name}`;
 	if (!tryFind) {
 		return {
 			...state,
@@ -119,16 +127,16 @@ const playLocation = (state, action) => {
 			currentLocation: visiting,
 			gameState: GameState.Resolve,
 			resolution: {
-				message,
+				locationMessage,
 				success: true,
 			},
-			gameLog: state.gameLog.concat(gameMessage(message))
+			gameLog: state.gameLog.concat(gameMessage(locationMessage))
 		};
 	}
 
 	switch (tryFind.type) {
 		case CardType.Artifact: {
-			const message = `Welcome to ${visiting.name}. You found ${tryFind.name} on your way!`;
+			const artifactMessage = `You found ${tryFind.name} on your way!`;
 			return {
 				...state,
 				hand: state.hand.filter(x => x !== visiting && x !== tryFind),
@@ -136,12 +144,53 @@ const playLocation = (state, action) => {
 				currentLocation: visiting,
 				gameState: GameState.Resolve,
 				resolution: {
-					message,
+					message: [locationMessage, artifactMessage].join(' '),
 					success: true,
 				},
-				gameLog: state.gameLog.concat(gameMessage(message)),
+				gameLog: state.gameLog.concat(
+					gameMessage(locationMessage),
+					gameMessage(artifactMessage),
+				),
 			};
 		};
+
+		case CardType.Event: {
+			const eventMessage = `While heading to ${visiting.name}, ${tryFind.name} jumps out.`;
+			return {
+				...state,
+				hand: state.hand.filter(x => x !== visiting && x !== tryFind),
+				played: state.played.concat(visiting, tryFind),
+				currentLocation: visiting,
+				gameState: GameState.Resolve,
+				resolution: {
+					message: [locationMessage, eventMessage].join(' '),
+					success: true,
+				},
+				gameLog: state.gameLog.concat(
+					gameMessage(locationMessage),
+					gameMessage(eventMessage),
+				),
+			};
+		}
+
+		case CardType.Person: {
+			const eventMessage = `"Hey!" A stranger beckons. It's ${tryFind.name}!`;
+			return {
+				...state,
+				hand: state.hand.filter(x => x !== visiting && x !== tryFind),
+				played: state.played.concat(visiting, tryFind),
+				currentLocation: visiting,
+				gameState: GameState.Resolve,
+				resolution: {
+					message: [locationMessage, eventMessage].join(' '),
+					success: true,
+				},
+				gameLog: state.gameLog.concat(
+					gameMessage(locationMessage),
+					gameMessage(eventMessage),
+				),
+			};
+		}
 
 		default:
 			throw new Error(`@todo: handle finding ${tryFind.name} at location`);

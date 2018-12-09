@@ -155,9 +155,6 @@ export const instructionSelector = createSelector([
 			case GameState.PlayingLocation:
 				return `On your way to ${playingCardName}, you stumble across... (Select an Artifact, Event, or Person)`;
 
-			case GameState.PlayingEvent:
-				return `[@todo: feedback for resolve event: ${playingCardName}]`;
-
 			case GameState.Resolve:
 				return '';
 
