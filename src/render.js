@@ -11,6 +11,14 @@ const logFn = (fn, name = '') => (...args) => {
 
 import { GameState, validPlaysForState } from './dawg';
 
+
+
+
+
+
+
+
+
 // -------- global actions...? new game...? main menu...? ------- //
 export const actionsStateSelector = fp.get(['boundActions']);
 export const Actions = ({ newGame }) => {
@@ -68,11 +76,10 @@ const inPlayStateSelector = createSelector([
 }));
 const InPlay = ({ cards, locationName }) => h('section', { class: 'in-play' }, [
 	h('h4', {}, locationName),
-	cards.length <= 0
-		? h('div', {}, 'You have nothing.')
-		: h('div', { class: 'cards' }, [
-			...cards.map(card => h(CardRender, { card })),
-		]),
+	h('div', { class: classNames('cards', { 'cards--empty': cards.length <= 0 }) }, [
+		cards.length <= 0 ? 'You have nothing.' : undefined,
+		...cards.map(card => h(CardRender, { card })),
+	]),
 ]);
 
 
@@ -144,13 +151,28 @@ export const Deck = ({ deck }) => h('section', { class: 'deck-stats' }, [
 
 
 // -------- player cta ------- //
+const gameOverSelector = createSelector([
+	fp.get(['gameState']),
+	fp.get(['hand']),
+	validPlaysSelector,
+], (gameState, hand, validPlays) => {
+	if (gameState !== GameState.PlayForTurn) {
+		return false;
+	}
+
+	const possiblePlays = hand.filter(card => validPlays.has(card.type));
+	return possiblePlays.length <= 0;
+});
 export const instructionSelector = createSelector([
 	fp.get(['gameState']),
 	fp.get(['playingCard', 'name']),
-], (gameState, playingCardName) =>{
+	gameOverSelector,
+], (gameState, playingCardName, gameOver) =>{
 		switch (gameState) {
 			case GameState.PlayForTurn:
-				return 'Do something. (Select a Location or Event)'
+				return gameOver
+					? 'No more plays. Game over.'
+					: 'Do something. (Select a Location or Event)';
 
 			case GameState.PlayingLocation:
 				return `On your way to ${playingCardName}, you stumble across... (Select an Artifact, Event, or Person)`;
@@ -183,11 +205,13 @@ const feedbackStateSelector = createSelector([
 	instructionSelector,
 	skipStepSelector,
 	resolveStateSelector,
-], (instruction, skipStep, resolveState) => ({ instruction, skipStep, resolveState }))
-export const Feedback = ({ instruction, skipStep, resolveState }) => h('section', { class: 'feedback'}, [
+	gameOverSelector,
+], (instruction, skipStep, resolveState, gameOver) => ({ instruction, skipStep, resolveState, gameOver }))
+export const Feedback = ({ instruction, skipStep, resolveState, gameOver }) => h('section', { class: 'feedback'}, [
 	resolveState ? h(Resolve, resolveState) : undefined,
 	instruction ? h('div', { class: 'instruction' }, instruction) : undefined,
 	skipStep.hasSkip ? h('button', { onClick: skipStep.onSkip }, 'Skip') : undefined,
+	gameOver ? h('button', { onClick: fp.noop }, 'Score This Game') : undefined,
 ]);
 
 

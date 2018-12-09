@@ -24,6 +24,11 @@ body {
 		margin-bottom: 0;
 	}
 
+	h1 .small {
+		font-size: 0.35em;
+		color: #bbb;
+	}
+
 	section:not(:last-child) {
 		margin-bottom: 1em;
 	}
@@ -36,18 +41,17 @@ body {
 	user-select: none;
 }
 
-.dawg h1 .small {
-	font-size: 0.35em;
-	color: #bbb;
-}
-
 .cards {
 	display: flex;
-	justify-items: start;
 	flex-wrap: wrap;
 }
 
+.cards--empty {
+	justify-content: center;
+}
+
 .card {
+	flex: 0 0 auto;
 	width: 4em;
 	margin: 5px;
 }
@@ -72,13 +76,24 @@ body {
 	}
 }
 
-.actions {
+.in-play {
+	max-height: 8em;
+	display: flex;
+	flex-direction: column;
+	flex: 1 0 auto;
+	overflow: hidden;
+
+	.cards {
+		overflow: auto;
+		border: 1px solid lightgrey;
+	}
 }
 
 .game-log {
 	flex: 1 1 auto;
-	overflow: auto;
+	overflow-y: auto;
 	border: 1px solid lightgrey;
+	min-height: 5em;
 
 	.log-message {
 		padding: 5px;
