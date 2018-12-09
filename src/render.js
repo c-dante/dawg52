@@ -198,6 +198,21 @@ export const Feedback = ({ instruction, skipStep, resolveState }) => h('section'
 
 
 
+// -------- game log do show your history ------- //
+const gameLogStateSelector = createSelector(
+	[fp.get(['gameLog'])],
+	(events) => ({
+		events: events.slice().reverse(),
+	})
+);
+const GameLog = ({ events }) => h('section', { class: 'game-log'}, [
+	...events.map((event, i) => h('div', { class: 'log-message' }, `[${new Date(event.postedAt).toISOString()}] ${event.message}`)),
+]);
+
+
+
+
+
 
 
 // -------- dawg ------- //
@@ -208,8 +223,9 @@ const dawgStateSelector = createSelector([
 	feedbackStateSelector,
 	discardStateSelector,
 	inPlayStateSelector,
-], (actionsState, handState, deckState, feedbackState, discardState, inPlayState) => ({
-	actionsState, handState, deckState, feedbackState, discardState, inPlayState,
+	gameLogStateSelector,
+], (actionsState, handState, deckState, feedbackState, discardState, inPlayState, gameLogState) => ({
+	actionsState, handState, deckState, feedbackState, discardState, inPlayState, gameLogState,
 }));
 export const DawgRedux = (state) => {
 	const dawgState = logFn(dawgStateSelector)(state);
@@ -221,5 +237,6 @@ export const DawgRedux = (state) => {
 			h(Deck, dawgState.deckState),
 			h(Discard, dawgState.discardState),
 			h(Actions, dawgState.actionsState),
+			h(GameLog, dawgState.gameLogState),
 		]);
 };

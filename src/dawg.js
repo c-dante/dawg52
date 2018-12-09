@@ -1,5 +1,11 @@
 import { act, drawTo, shuffleArray } from './util';
 
+// @todo: users love messages!
+const gameMessage = (message) => ({
+	 message,
+	 postedAt: Date.now()
+});
+
 // Let's build a deck!
 export const CardType = {
 	Location: 'Location',
@@ -47,6 +53,7 @@ const defaultState = {
 	deck: [],
 	played: [],
 	discard: [],
+	gameLog: [],
 	currentLocation: undefined,
 	gameState: GameState.PlayForTurn,
 	resolution: undefined,
@@ -103,6 +110,7 @@ const playLocation = (state, action) => {
 	const visiting = state.playingCard;
 	const tryFind = action.payload;
 
+	const message = `Welcome to ${visiting.name}`;
 	if (!tryFind) {
 		return {
 			...state,
@@ -111,14 +119,16 @@ const playLocation = (state, action) => {
 			currentLocation: visiting,
 			gameState: GameState.Resolve,
 			resolution: {
-				message: `Welcome to ${visiting.name}`,
+				message,
 				success: true,
 			},
+			gameLog: state.gameLog.concat(gameMessage(message))
 		};
 	}
 
 	switch (tryFind.type) {
-		case CardType.Artifact:
+		case CardType.Artifact: {
+			const message = `Welcome to ${visiting.name}. You found ${tryFind.name} on your way!`;
 			return {
 				...state,
 				hand: state.hand.filter(x => x !== visiting && x !== tryFind),
@@ -126,10 +136,13 @@ const playLocation = (state, action) => {
 				currentLocation: visiting,
 				gameState: GameState.Resolve,
 				resolution: {
-					message: `Welcome to ${visiting.name}. You found ${tryFind.name} on your way!`,
+					message,
 					success: true,
 				},
-			}
+				gameLog: state.gameLog.concat(gameMessage(message)),
+			};
+		};
+
 		default:
 			throw new Error(`@todo: handle finding ${tryFind.name} at location`);
 	}
@@ -169,6 +182,7 @@ export const reducer = (state = defaultState, action) => {
 				hand,
 				deck,
 				gameState: GameState.PlayForTurn,
+				gameLog: state.gameLog.concat(gameMessage('[New Game]')),
 			};
 		}
 
@@ -202,7 +216,7 @@ export const reducer = (state = defaultState, action) => {
 				hand,
 				gameState: GameState.PlayForTurn,
 				resolution: undefined,
-			}
+			};
 
 		default:
 			console.debug('Unhandled by dawg', state, action);
