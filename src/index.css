@@ -36,7 +36,6 @@ body {
 
 .btn {
 	border: 1px solid #ccc;
-	text-align: center;
 	cursor: pointer;
 	user-select: none;
 }
@@ -44,10 +43,6 @@ body {
 .cards {
 	display: flex;
 	flex-wrap: wrap;
-}
-
-.cards--empty {
-	justify-content: center;
 }
 
 .card {
@@ -77,23 +72,20 @@ body {
 }
 
 .in-play {
-	max-height: 8em;
 	display: flex;
 	flex-direction: column;
-	flex: 1 0 auto;
+	flex: 1 1 auto;
 	overflow: hidden;
 
 	.cards {
 		overflow: auto;
-		border: 1px solid lightgrey;
 	}
 }
 
 .game-log {
-	flex: 1 1 auto;
 	overflow-y: auto;
 	border: 1px solid lightgrey;
-	min-height: 5em;
+	height: 5em;
 
 	.log-message {
 		padding: 5px;

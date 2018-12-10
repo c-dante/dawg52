@@ -1,3 +1,4 @@
+import fp from 'lodash/fp';
 import { act, drawTo, shuffleArray } from './util';
 
 // @todo: users love messages!
@@ -80,6 +81,112 @@ export const validPlaysForState = {
 	]),
 };
 
+
+// -------------- Resolution Logic ---------------- //
+
+const resolveLocation = (state, location) => {
+	const message = `Welcome to ${location.name}.`;
+	return {
+		...state,
+		// Set the location
+		currentLocation: location,
+
+		// Update hand / play
+		hand: state.hand.filter(x => x !== location),
+		played: state.played.concat(location),
+
+		// Set the resolution screen
+		gameState: GameState.Resolve,
+		resolution: {
+			message,
+			success: true,
+		},
+		gameLog: state.gameLog.concat(gameMessage(message))
+	};
+};
+
+
+
+
+
+const resolveEvent = (state, event) => {
+	const currentLocation = state.currentLocation;
+	const locationText = currentLocation ? `on your way to ${currentLocation.name}` : 'wandering the wilderness';
+	const message = `While ${locationText}, ${event.name} jumps out.`;
+	return {
+		...state,
+
+		// Update hand / play
+		hand: state.hand.filter(x => x !== event),
+		played: state.played.concat(event),
+
+		// Set the resolution screen @todo: merge?
+		gameState: GameState.Resolve,
+		resolution: {
+			message: [message, fp.get(['resolution', 'message'], state)].filter(x => x).join('\n'),
+			success: true,
+		},
+		gameLog: state.gameLog.concat(gameMessage(message)),
+	};
+};
+
+
+
+
+const resolveArtifact = (state, artifact) => {
+	const currentLocation = state.currentLocation;
+	const locationText = currentLocation ? `on your way to ${currentLocation.name}` : 'wandering the wilderness';
+	const message = `While ${locationText}, you stumble on ${artifact.name}.`;
+	return {
+		...state,
+
+		// Update hand / play
+		hand: state.hand.filter(x => x !== artifact),
+		played: state.played.concat(artifact),
+
+		// Set the resolution screen @todo: merge?
+		gameState: GameState.Resolve,
+		resolution: {
+			message: [message, fp.get(['resolution', 'message'], state)].filter(x => x).join(' '),
+			success: true,
+		},
+		gameLog: state.gameLog.concat(gameMessage(message)),
+	};
+};
+
+
+
+const resolvePerson = (state, person) => {
+	const currentLocation = state.currentLocation;
+	const locationText = currentLocation ? `on your way to ${currentLocation.name}` : 'wandering the wilderness';
+	const message = `While ${locationText}, a stranger beckons. It's ${person.name}!`;
+	return {
+		...state,
+
+		// Update hand / play
+		hand: state.hand.filter(x => x !== person),
+		played: state.played.concat(person),
+
+		// Set the resolution screen @todo: merge?
+		gameState: GameState.Resolve,
+		resolution: {
+			message: [message, fp.get(['resolution', 'message'], state)].filter(x => x).join(' '),
+			success: true,
+		},
+		gameLog: state.gameLog.concat(gameMessage(message)),
+	};
+};
+
+
+
+
+
+
+
+
+
+
+
 // Handler for playing a card in a given state
 const playForTurn = (state, action) => {
 	const card = action.payload;
@@ -92,20 +199,7 @@ const playForTurn = (state, action) => {
 			};
 
 		case CardType.Event: {
-			const eventMessage = `Off in the distance, you see something strange. It's ${card.name}!`;
-			return {
-				...state,
-				hand: state.hand.filter(x => x !== card),
-				played: state.played.concat(card),
-				gameState: GameState.Resolve,
-				resolution: {
-					message: eventMessage,
-					success: true,
-				},
-				gameLog: state.gameLog.concat(
-					gameMessage(eventMessage),
-				),
-			};
+			return resolveEvent(state, card);
 		};
 
 		default:
@@ -118,79 +212,24 @@ const playLocation = (state, action) => {
 	const visiting = state.playingCard;
 	const tryFind = action.payload;
 
-	const locationMessage = `Welcome to ${visiting.name}`;
+	// First just resolve going to the location
+	const stateAfterVisit = resolveLocation(state, visiting);
+
+	// Not finding anything, then we just visit the location
 	if (!tryFind) {
-		return {
-			...state,
-			hand: state.hand.filter(x => x !== visiting),
-			played: state.played.concat(visiting),
-			currentLocation: visiting,
-			gameState: GameState.Resolve,
-			resolution: {
-				locationMessage,
-				success: true,
-			},
-			gameLog: state.gameLog.concat(gameMessage(locationMessage))
-		};
+		return stateAfterVisit;
 	}
 
+	// Otherwise, let's attempt to find something along the way!
 	switch (tryFind.type) {
-		case CardType.Artifact: {
-			const artifactMessage = `You found ${tryFind.name} on your way!`;
-			return {
-				...state,
-				hand: state.hand.filter(x => x !== visiting && x !== tryFind),
-				played: state.played.concat(visiting, tryFind),
-				currentLocation: visiting,
-				gameState: GameState.Resolve,
-				resolution: {
-					message: [locationMessage, artifactMessage].join(' '),
-					success: true,
-				},
-				gameLog: state.gameLog.concat(
-					gameMessage(locationMessage),
-					gameMessage(artifactMessage),
-				),
-			};
-		};
+		case CardType.Artifact:
+			return resolveArtifact(stateAfterVisit, tryFind);
 
-		case CardType.Event: {
-			const eventMessage = `While heading to ${visiting.name}, ${tryFind.name} jumps out.`;
-			return {
-				...state,
-				hand: state.hand.filter(x => x !== visiting && x !== tryFind),
-				played: state.played.concat(visiting, tryFind),
-				currentLocation: visiting,
-				gameState: GameState.Resolve,
-				resolution: {
-					message: [locationMessage, eventMessage].join(' '),
-					success: true,
-				},
-				gameLog: state.gameLog.concat(
-					gameMessage(locationMessage),
-					gameMessage(eventMessage),
-				),
-			};
-		}
+		case CardType.Event:
+			return resolveEvent(stateAfterVisit, tryFind);
 
-		case CardType.Person: {
-			const eventMessage = `"Hey!" A stranger beckons. It's ${tryFind.name}!`;
-			return {
-				...state,
-				hand: state.hand.filter(x => x !== visiting && x !== tryFind),
-				played: state.played.concat(visiting, tryFind),
-				currentLocation: visiting,
-				gameState: GameState.Resolve,
-				resolution: {
-					message: [locationMessage, eventMessage].join(' '),
-					success: true,
-				},
-				gameLog: state.gameLog.concat(
-					gameMessage(locationMessage),
-					gameMessage(eventMessage),
-				),
-			};
-		}
+		case CardType.Person:
+			return resolvePerson(stateAfterVisit, tryFind);
 
 		default:
 			throw new Error(`@todo: handle finding ${tryFind.name} at location`);
